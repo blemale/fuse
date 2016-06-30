@@ -23,7 +23,7 @@ public class CircuitBreaker {
         ringBuffer = disruptor.getRingBuffer();
     }
 
-    public <T> CompletableFuture<T> execute(Supplier<CompletableFuture<T>> action) {
+    public <T> CompletableFuture<T> executeAsync(Supplier<CompletableFuture<T>> action) {
         try {
             if (stateMachine.isExecutionAllowed()) {
                 return action.get().whenCompleteAsync(this::reportResult);
@@ -40,6 +40,21 @@ public class CircuitBreaker {
             return f;
         }
     }
+
+    public <T> T execute(Supplier<T> action) {
+        try {
+            if (stateMachine.isExecutionAllowed()) {
+                return action.get();
+            } else {
+                report(CallStatus.OPEN);
+                throw new CircuitBreakerOpenException();
+            }
+        } catch (Throwable ex) {
+            report(CallStatus.FAILURE);
+            throw ex;
+        }
+    }
+
 
     private <T> void reportResult(T t, Throwable ex) {
         if (ex != null) {

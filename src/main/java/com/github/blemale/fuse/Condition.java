@@ -21,7 +21,7 @@ public interface Condition {
 
         @Override
         public void update(CallStatus callStatus) {
-            int inc = callStatus == CallStatus.SUCCESS ? 0 : 1;
+            int inc = callStatus.isSuccess() ? 0 : 1;
             count += inc;
         }
 
@@ -55,7 +55,7 @@ public interface Condition {
         @Override
         public void update(CallStatus callStatus) {
             int oldValue = values[index];
-            int newValue = callStatus == CallStatus.SUCCESS ? 0 : 1;
+            int newValue = callStatus.isSuccess() ? 0 : 1;
 
             values[index] = newValue;
             index = (index + 1) % windowLength;

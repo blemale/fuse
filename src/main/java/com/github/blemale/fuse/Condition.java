@@ -46,7 +46,7 @@ public interface Condition {
 
         public FailureRate(double threshold, int windowLength) {
             Preconditions.requireArgument(threshold > 0, "threshold should be > 0");
-            Preconditions.requireArgument(windowLength > 0, "threshold should be > 0");
+            Preconditions.requireArgument(windowLength > 0, "windowLength should be > 0");
             this.threshold = threshold;
             this.windowLength = windowLength;
             this.values = new int[windowLength];

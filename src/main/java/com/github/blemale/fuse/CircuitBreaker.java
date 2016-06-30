@@ -8,16 +8,17 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
-public class CircuitBreaker {
+public class CircuitBreaker implements AutoCloseable {
     public static class CircuitBreakerOpenException extends RuntimeException {}
 
     private final StateMachine stateMachine;
+    private final Disruptor<Event> disruptor;
     private final RingBuffer<Event> ringBuffer;
 
     public CircuitBreaker(Condition condition, Duration cooldown) {
         stateMachine = new StateMachine(condition, cooldown);
 
-        Disruptor<Event> disruptor = new Disruptor<>(Event::new, 1024, Executors.defaultThreadFactory());
+        disruptor = new Disruptor<>(Event::new, 1024, Executors.defaultThreadFactory());
         disruptor.handleEventsWith(stateMachine);
         disruptor.start();
         ringBuffer = disruptor.getRingBuffer();
@@ -53,6 +54,10 @@ public class CircuitBreaker {
             report(CallStatus.FAILURE);
             throw ex;
         }
+    }
+
+    public void close() {
+        disruptor.shutdown();
     }
 
 

@@ -2,6 +2,7 @@ package com.github.blemale.fuse;
 
 import com.lmax.disruptor.EventHandler;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,16 +62,18 @@ class StateMachine implements EventHandler<Event> {
     }
 
     private class Open implements State {
+        private final Clock clock;
         private final long cooldown;
         private Instant openAt = Instant.now();
 
-        public Open(Duration cooldown) {
+        public Open(Duration cooldown, Clock clock) {
             this.cooldown = cooldown.toNanos();
+            this.clock = clock;
         }
 
         @Override
         public void enter() {
-            openAt = Instant.now();
+            openAt = clock.instant();
         }
 
         @Override
@@ -80,7 +83,7 @@ class StateMachine implements EventHandler<Event> {
 
         @Override
         public void onEvent(Event event, long sequence, boolean endOfBatch) throws Exception {
-            if (openAt.plusNanos(cooldown).isBefore(Instant.now())) {
+            if (openAt.plusNanos(cooldown).isBefore(clock.instant())) {
                 transitionTo(halfOpen);
             }
         }
@@ -92,10 +95,15 @@ class StateMachine implements EventHandler<Event> {
     private volatile State state;
 
     StateMachine(Condition condition, Duration cooldown) {
-        open = new Open(cooldown);
+        this(condition, cooldown, Clock.systemDefaultZone());
+    }
+
+    StateMachine(Condition condition, Duration cooldown, Clock clock) {
+        open = new Open(cooldown, clock);
         halfOpen = new HalfOpen();
         close = new Close(condition);
-        state = close;
+
+        transitionTo(close);
     }
 
     public boolean isExecutionAllowed() {

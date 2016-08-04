@@ -13,7 +13,6 @@ public class CircuitBreaker implements AutoCloseable {
 
     private final StateMachine stateMachine;
     private final Disruptor<Event> disruptor;
-    private final RingBuffer<Event> ringBuffer;
 
     public CircuitBreaker(Condition condition, Duration cooldown) {
         stateMachine = new StateMachine(condition, cooldown);
@@ -21,7 +20,6 @@ public class CircuitBreaker implements AutoCloseable {
         disruptor = new Disruptor<>(Event::new, 1024, Executors.defaultThreadFactory());
         disruptor.handleEventsWith(stateMachine);
         disruptor.start();
-        ringBuffer = disruptor.getRingBuffer();
     }
 
     public <T> CompletableFuture<T> executeAsync(Supplier<CompletableFuture<T>> action) {
@@ -70,6 +68,6 @@ public class CircuitBreaker implements AutoCloseable {
     }
 
     private void report(CallStatus callStatus) {
-        ringBuffer.publishEvent((e, seq, s) -> e.setCallStatus(s), callStatus);
+        disruptor.publishEvent((e, seq, s) -> e.setCallStatus(s), callStatus);
     }
 }

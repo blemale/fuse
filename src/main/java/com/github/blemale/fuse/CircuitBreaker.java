@@ -1,25 +1,30 @@
 package com.github.blemale.fuse;
 
-import com.lmax.disruptor.RingBuffer;
-import com.lmax.disruptor.dsl.Disruptor;
+import org.agrona.concurrent.*;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
 public class CircuitBreaker implements AutoCloseable {
     public static class CircuitBreakerOpenException extends RuntimeException {}
 
     private final StateMachine stateMachine;
-    private final Disruptor<Event> disruptor;
+    private final QueuedPipe<Event> queuedPipe;
+    private final AgentRunner agentRunner;
 
     public CircuitBreaker(Condition condition, Duration cooldown) {
         stateMachine = new StateMachine(condition, cooldown);
-
-        disruptor = new Disruptor<>(Event::new, 1024, Executors.defaultThreadFactory());
-        disruptor.handleEventsWith(stateMachine);
-        disruptor.start();
+        queuedPipe = new ManyToOneConcurrentArrayQueue<>(1024);
+        PipeConsumerAgent agent = new PipeConsumerAgent(queuedPipe, stateMachine);
+        agentRunner =
+                new AgentRunner(
+                        new YieldingIdleStrategy(),
+                        t -> {},
+                        null,
+                        agent
+                );
+        AgentRunner.startOnThread(agentRunner);
     }
 
     public <T> CompletableFuture<T> executeAsync(Supplier<CompletableFuture<T>> action) {
@@ -55,7 +60,7 @@ public class CircuitBreaker implements AutoCloseable {
     }
 
     public void close() {
-        disruptor.shutdown();
+        agentRunner.close();
     }
 
 
@@ -68,6 +73,6 @@ public class CircuitBreaker implements AutoCloseable {
     }
 
     private void report(CallStatus callStatus) {
-        disruptor.publishEvent((e, seq, s) -> e.setCallStatus(s), callStatus);
+        while (!queuedPipe.offer(Event.create(callStatus)));
     }
 }

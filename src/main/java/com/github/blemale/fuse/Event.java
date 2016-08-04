@@ -7,6 +7,12 @@ class Event {
         return callStatus;
     }
 
+    public static Event create(CallStatus callStatus) {
+        Event event = new Event();
+        event.setCallStatus(callStatus);
+        return event;
+    }
+
     public void setCallStatus(CallStatus callStatus) {
         this.callStatus = callStatus;
     }

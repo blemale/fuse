@@ -4,6 +4,7 @@ import org.agrona.concurrent.*;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -23,6 +24,11 @@ public class CircuitBreaker implements AutoCloseable {
     }
 
     CircuitBreaker(Condition condition, Duration cooldown, Clock clock, Optional<CountDownLatch> latch) {
+        Objects.requireNonNull(condition);
+        Objects.requireNonNull(cooldown);
+        Objects.requireNonNull(clock);
+        Objects.requireNonNull(latch);
+        
         stateMachine = new StateMachine(condition, cooldown, clock, latch);
         queuedPipe = new ManyToOneConcurrentArrayQueue<>(1024);
         agentRunner =

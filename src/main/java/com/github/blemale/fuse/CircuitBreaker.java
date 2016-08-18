@@ -28,9 +28,9 @@ public class CircuitBreaker implements AutoCloseable {
         Objects.requireNonNull(cooldown);
         Objects.requireNonNull(clock);
         Objects.requireNonNull(latch);
-        
+
         stateMachine = new StateMachine(condition, cooldown, clock, latch);
-        queuedPipe = new ManyToOneConcurrentArrayQueue<>(1024);
+        queuedPipe = new ManyToOneConcurrentArrayQueue<>(128);
         agentRunner =
                 new AgentRunner(
                         new YieldingIdleStrategy(),

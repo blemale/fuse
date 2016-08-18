@@ -10,7 +10,6 @@ scalaVersion := "2.11.8"
 
 libraryDependencies ++=
   Seq(
-    "com.lmax" % "disruptor" % "3.3.4",
     "org.agrona" % "Agrona" % "0.5.3",
     "org.scalactic" %% "scalactic" % "2.2.6" % Test,
     "org.scalatest" %% "scalatest" % "2.2.6" % Test

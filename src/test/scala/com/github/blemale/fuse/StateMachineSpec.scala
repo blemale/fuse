@@ -21,7 +21,7 @@ class StateMachineSpec extends WordSpec with ShouldMatchers {
     "trip in open state when condition becomes false" in {
       val stateMachine = new StateMachine(new Condition.FailureCount(1), Duration.of(1, SECONDS), clock)
 
-      stateMachine.onEvent(Events.Failure, 1, false)
+      stateMachine.accept(CallStatus.FAILURE)
 
       stateMachine.isExecutionAllowed shouldEqual false
     }
@@ -29,9 +29,9 @@ class StateMachineSpec extends WordSpec with ShouldMatchers {
     "allow a trial call after cool down" in {
       val stateMachine = new StateMachine(new Condition.FailureCount(1), Duration.of(1, SECONDS), clock)
 
-      stateMachine.onEvent(Events.Failure, 1, false)
+      stateMachine.accept(CallStatus.FAILURE)
       clock.plus(Duration.of(2, SECONDS))
-      stateMachine.onEvent(Events.Open, 1, false)
+      stateMachine.accept(CallStatus.OPEN)
 
       stateMachine.isExecutionAllowed shouldEqual true
       stateMachine.isExecutionAllowed shouldEqual false
@@ -40,11 +40,11 @@ class StateMachineSpec extends WordSpec with ShouldMatchers {
     "switch on close state when trial call succeed" in {
       val stateMachine = new StateMachine(new Condition.FailureCount(1), Duration.of(1, SECONDS), clock)
 
-      stateMachine.onEvent(Events.Failure, 1, false)
+      stateMachine.accept(CallStatus.FAILURE)
       clock.plus(Duration.of(2, SECONDS))
-      stateMachine.onEvent(Events.Open, 1, false)
+      stateMachine.accept(CallStatus.OPEN)
       stateMachine.isExecutionAllowed
-      stateMachine.onEvent(Events.Success, 1, false)
+      stateMachine.accept(CallStatus.SUCCESS)
 
       stateMachine.isExecutionAllowed shouldEqual true
     }
@@ -52,11 +52,11 @@ class StateMachineSpec extends WordSpec with ShouldMatchers {
     "switch off open state when trial call fail" in {
       val stateMachine = new StateMachine(new Condition.FailureCount(1), Duration.of(1, SECONDS), clock)
 
-      stateMachine.onEvent(Events.Failure, 1, false)
+      stateMachine.accept(CallStatus.FAILURE)
       clock.plus(Duration.of(2, SECONDS))
-      stateMachine.onEvent(Events.Open, 1, false)
+      stateMachine.accept(CallStatus.OPEN)
       stateMachine.isExecutionAllowed
-      stateMachine.onEvent(Events.Failure, 1, false)
+      stateMachine.accept(CallStatus.FAILURE)
 
       stateMachine.isExecutionAllowed shouldEqual false
     }

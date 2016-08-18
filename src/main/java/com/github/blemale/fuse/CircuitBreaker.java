@@ -10,19 +10,18 @@ public class CircuitBreaker implements AutoCloseable {
     public static class CircuitBreakerOpenException extends RuntimeException {}
 
     private final StateMachine stateMachine;
-    private final QueuedPipe<Event> queuedPipe;
+    private final QueuedPipe<CallStatus> queuedPipe;
     private final AgentRunner agentRunner;
 
     public CircuitBreaker(Condition condition, Duration cooldown) {
         stateMachine = new StateMachine(condition, cooldown);
         queuedPipe = new ManyToOneConcurrentArrayQueue<>(1024);
-        PipeConsumerAgent agent = new PipeConsumerAgent(queuedPipe, stateMachine);
         agentRunner =
                 new AgentRunner(
                         new YieldingIdleStrategy(),
                         t -> {},
                         null,
-                        agent
+                        new PipeConsumerAgent(queuedPipe, stateMachine)
                 );
         AgentRunner.startOnThread(agentRunner);
     }
@@ -73,6 +72,6 @@ public class CircuitBreaker implements AutoCloseable {
     }
 
     private void report(CallStatus callStatus) {
-        while (!queuedPipe.offer(Event.create(callStatus)));
+        while (!queuedPipe.offer(callStatus));
     }
 }

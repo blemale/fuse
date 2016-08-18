@@ -2,8 +2,11 @@ package com.github.blemale.fuse;
 
 import org.agrona.concurrent.*;
 
+import java.time.Clock;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.function.Supplier;
 
 public class CircuitBreaker implements AutoCloseable {
@@ -16,7 +19,11 @@ public class CircuitBreaker implements AutoCloseable {
     private final AgentRunner agentRunner;
 
     public CircuitBreaker(Condition condition, Duration cooldown) {
-        stateMachine = new StateMachine(condition, cooldown);
+        this(condition, cooldown, Clock.systemDefaultZone(), Optional.empty());
+    }
+
+    CircuitBreaker(Condition condition, Duration cooldown, Clock clock, Optional<CountDownLatch> latch) {
+        stateMachine = new StateMachine(condition, cooldown, clock, latch);
         queuedPipe = new ManyToOneConcurrentArrayQueue<>(1024);
         agentRunner =
                 new AgentRunner(
@@ -49,7 +56,9 @@ public class CircuitBreaker implements AutoCloseable {
     public <T> T execute(Supplier<T> action) {
         try {
             if (stateMachine.isExecutionAllowed()) {
-                return action.get();
+                T result = action.get();
+                report(CallStatus.SUCCESS);
+                return result;
             } else {
                 report(CallStatus.OPEN);
                 throw CircuitBreakerOpenException.INSTANCE;

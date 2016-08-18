@@ -12,7 +12,8 @@ libraryDependencies ++=
   Seq(
     "org.agrona" % "Agrona" % "0.5.3",
     "org.scalactic" %% "scalactic" % "2.2.6" % Test,
-    "org.scalatest" %% "scalatest" % "2.2.6" % Test
+    "org.scalatest" %% "scalatest" % "2.2.6" % Test,
+    "org.scala-lang.modules" %% "scala-java8-compat" % "0.7.0" % Test
   )
 
 SbtScalariform.scalariformSettings

@@ -3,6 +3,8 @@ package com.github.blemale.fuse;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -93,14 +95,18 @@ class StateMachine implements Consumer<CallStatus> {
     private final Close close;
     private volatile State state;
 
-    StateMachine(Condition condition, Duration cooldown) {
-        this(condition, cooldown, Clock.systemDefaultZone());
-    }
+    private final Optional<CountDownLatch> latch;
 
     StateMachine(Condition condition, Duration cooldown, Clock clock) {
+        this(condition, cooldown, clock, Optional.empty());
+    }
+
+    StateMachine(Condition condition, Duration cooldown, Clock clock, Optional<CountDownLatch> latch) {
         open = new Open(cooldown, clock);
         halfOpen = new HalfOpen();
         close = new Close(condition);
+
+        this.latch = latch;
 
         transitionTo(close);
     }
@@ -112,6 +118,7 @@ class StateMachine implements Consumer<CallStatus> {
     @Override
     public void accept(CallStatus status)  {
         state.accept(status);
+        latch.ifPresent(CountDownLatch::countDown);
     }
 
     private void transitionTo(State newState) {

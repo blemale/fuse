@@ -1,15 +1,14 @@
 package com.github.blemale.fuse;
 
-import com.lmax.disruptor.EventHandler;
-
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 
-class StateMachine implements EventHandler<Event> {
-    private interface State extends EventHandler<Event> {
+class StateMachine implements Consumer<CallStatus> {
+    private interface State extends Consumer<CallStatus> {
         void enter();
         boolean isExecutionAllowed();
     }
@@ -32,8 +31,8 @@ class StateMachine implements EventHandler<Event> {
         }
 
         @Override
-        public void onEvent(Event event, long sequence, boolean endOfBatch) throws Exception {
-            condition.update(event.status());
+        public void accept(CallStatus status) {
+            condition.update(status);
             if(!condition.isTrue()) {
                 transitionTo(open);
             }
@@ -54,9 +53,9 @@ class StateMachine implements EventHandler<Event> {
         }
 
         @Override
-        public void onEvent(Event event, long sequence, boolean endOfBatch) throws Exception {
-            if (event.status() != CallStatus.OPEN) {
-                transitionTo(event.status() == CallStatus.SUCCESS ? close : open);
+        public void accept(CallStatus status) {
+            if (status != CallStatus.OPEN) {
+                transitionTo(status == CallStatus.SUCCESS ? close : open);
             }
         }
     }
@@ -82,7 +81,7 @@ class StateMachine implements EventHandler<Event> {
         }
 
         @Override
-        public void onEvent(Event event, long sequence, boolean endOfBatch) throws Exception {
+        public void accept(CallStatus status) {
             if (openAt.plusNanos(cooldown).isBefore(clock.instant())) {
                 transitionTo(halfOpen);
             }
@@ -111,8 +110,8 @@ class StateMachine implements EventHandler<Event> {
     }
 
     @Override
-    public void onEvent(Event event, long sequence, boolean endOfBatch) throws Exception {
-        state.onEvent(event, sequence, endOfBatch);
+    public void accept(CallStatus status)  {
+        state.accept(status);
     }
 
     private void transitionTo(State newState) {

@@ -25,24 +25,4 @@ object TestKit {
   object TestClock {
     def apply(startInstant: Instant, zoneId: ZoneId): TestClock = new TestClock(startInstant, zoneId)
   }
-
-  object Events {
-    val Failure: Event = {
-      val event = new Event
-      event.setCallStatus(CallStatus.FAILURE)
-      event
-    }
-
-    val Open: Event = {
-      val event = new Event
-      event.setCallStatus(CallStatus.OPEN)
-      event
-    }
-
-    val Success: Event = {
-      val event = new Event
-      event.setCallStatus(CallStatus.SUCCESS)
-      event
-    }
-  }
 }

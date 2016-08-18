@@ -11,7 +11,6 @@ public class CircuitBreaker implements AutoCloseable {
         private static CircuitBreakerOpenException INSTANCE = new CircuitBreakerOpenException();
     }
 
-
     private final StateMachine stateMachine;
     private final QueuedPipe<CallStatus> queuedPipe;
     private final AgentRunner agentRunner;
@@ -24,7 +23,7 @@ public class CircuitBreaker implements AutoCloseable {
                         new YieldingIdleStrategy(),
                         t -> {},
                         null,
-                        new PipeConsumerAgent(queuedPipe, stateMachine)
+                        new PipeConsumerAgent<>(queuedPipe, stateMachine)
                 );
         AgentRunner.startOnThread(agentRunner);
     }
@@ -61,10 +60,10 @@ public class CircuitBreaker implements AutoCloseable {
         }
     }
 
+    @Override
     public void close() {
         agentRunner.close();
     }
-
 
     private <T> void reportResult(T t, Throwable ex) {
         if (ex != null) {

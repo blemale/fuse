@@ -7,7 +7,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 public class CircuitBreaker implements AutoCloseable {
-    public static class CircuitBreakerOpenException extends RuntimeException {}
+    public static class CircuitBreakerOpenException extends RuntimeException {
+        private static CircuitBreakerOpenException INSTANCE = new CircuitBreakerOpenException();
+    }
+
 
     private final StateMachine stateMachine;
     private final QueuedPipe<CallStatus> queuedPipe;
@@ -33,7 +36,7 @@ public class CircuitBreaker implements AutoCloseable {
             } else {
                 report(CallStatus.OPEN);
                 CompletableFuture<T> f = new CompletableFuture<>();
-                f.completeExceptionally(new CircuitBreakerOpenException());
+                f.completeExceptionally(CircuitBreakerOpenException.INSTANCE);
                 return f;
             }
         } catch (Throwable ex) {
@@ -50,7 +53,7 @@ public class CircuitBreaker implements AutoCloseable {
                 return action.get();
             } else {
                 report(CallStatus.OPEN);
-                throw new CircuitBreakerOpenException();
+                throw CircuitBreakerOpenException.INSTANCE;
             }
         } catch (Throwable ex) {
             report(CallStatus.FAILURE);

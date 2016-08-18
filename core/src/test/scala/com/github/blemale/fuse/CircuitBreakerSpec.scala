@@ -13,9 +13,9 @@ import org.scalatest.{ ShouldMatchers, WordSpec }
 
 import scala.compat.java8.FunctionConverters._
 import scala.compat.java8.FutureConverters._
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Try
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class CircuitBreakerSpec extends WordSpec with ShouldMatchers with ScalaFutures {
   import CircuitBreakerSpec._

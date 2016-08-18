@@ -1,16 +1,15 @@
 package com.github.blemale.fuse
 
-import com.github.blemale.fuse.Condition.{ FailureCount, FailureRate }
-import org.scalatest.{ FunSuite, ShouldMatchers, WordSpec }
+import com.github.blemale.fuse.Condition.FailureCount
+import org.scalatest.{ ShouldMatchers, WordSpec }
 
-class FailureRateSpec extends WordSpec with ShouldMatchers {
+class FailureCountSpec extends WordSpec with ShouldMatchers {
 
   "FailureCount" should {
     "be true" when {
-      "failure rate is below threshold" in {
-        val condition = new FailureRate(0.5, 3)
+      "failure count is below threshold" in {
+        val condition = new FailureCount(2)
 
-        condition.update(CallStatus.SUCCESS)
         condition.update(CallStatus.SUCCESS)
         condition.update(CallStatus.FAILURE)
 
@@ -18,18 +17,20 @@ class FailureRateSpec extends WordSpec with ShouldMatchers {
       }
     }
     "be false" when {
-      "failure rate is equal to threshold" in {
-        val condition = new FailureRate(0.5, 2)
+      "failure count is equal to threshold" in {
+        val condition = new FailureCount(2)
 
         condition.update(CallStatus.SUCCESS)
+        condition.update(CallStatus.FAILURE)
         condition.update(CallStatus.FAILURE)
 
         condition.isTrue shouldEqual false
       }
       "failure count is above threshold" in {
-        val condition = new FailureRate(0.5, 3)
+        val condition = new FailureCount(2)
 
         condition.update(CallStatus.SUCCESS)
+        condition.update(CallStatus.FAILURE)
         condition.update(CallStatus.FAILURE)
         condition.update(CallStatus.FAILURE)
 
@@ -38,7 +39,7 @@ class FailureRateSpec extends WordSpec with ShouldMatchers {
     }
 
     "count call status open as failure" in {
-      val condition = new FailureRate(0.5, 2)
+      val condition = new FailureCount(2)
 
       condition.update(CallStatus.OPEN)
       condition.update(CallStatus.OPEN)
@@ -47,9 +48,8 @@ class FailureRateSpec extends WordSpec with ShouldMatchers {
     }
 
     "reset the condition" in {
-      val condition = new FailureRate(0.5, 3)
+      val condition = new FailureCount(2)
 
-      condition.update(CallStatus.FAILURE)
       condition.update(CallStatus.FAILURE)
       condition.update(CallStatus.FAILURE)
 
@@ -59,21 +59,5 @@ class FailureRateSpec extends WordSpec with ShouldMatchers {
 
       condition.isTrue shouldEqual true
     }
-
-    "take into account only values in window" in {
-      val condition = new FailureRate(0.5, 3)
-
-      condition.update(CallStatus.FAILURE)
-      condition.update(CallStatus.FAILURE)
-      condition.update(CallStatus.FAILURE)
-
-      condition.isTrue shouldEqual false
-
-      condition.update(CallStatus.SUCCESS)
-      condition.update(CallStatus.SUCCESS)
-
-      condition.isTrue shouldEqual true
-    }
   }
-
 }

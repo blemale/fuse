@@ -18,6 +18,7 @@ public class CircuitBreaker implements AutoCloseable {
     private final StateMachine stateMachine;
     private final QueuedPipe<CallStatus> queuedPipe;
     private final AgentRunner agentRunner;
+    private final IdleStrategy idleStrategy;
 
     public CircuitBreaker(Condition condition, Duration cooldown) {
         this(condition, cooldown, Clock.systemDefaultZone(), Optional.empty());
@@ -29,6 +30,7 @@ public class CircuitBreaker implements AutoCloseable {
         Objects.requireNonNull(clock);
         Objects.requireNonNull(latch);
 
+        idleStrategy = new YieldingIdleStrategy();
         stateMachine = new StateMachine(condition, cooldown, clock, latch);
         queuedPipe = new ManyToOneConcurrentArrayQueue<>(128);
         agentRunner =
@@ -89,6 +91,8 @@ public class CircuitBreaker implements AutoCloseable {
     }
 
     private void report(CallStatus callStatus) {
-        while (!queuedPipe.offer(callStatus));
+        while (!queuedPipe.offer(callStatus)){
+            idleStrategy.idle();
+        };
     }
 }

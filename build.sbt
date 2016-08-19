@@ -24,3 +24,14 @@ lazy val core = project
         "org.scalatest" %% "scalatest" % "2.2.6" % Test,
         "org.scala-lang.modules" %% "scala-java8-compat" % "0.7.0" % Test
       ))
+
+lazy val benchmark = project
+    .settings(
+        libraryDependencies ++=
+        Seq(
+            "com.typesafe.akka" %% "akka-actor" % "2.4.9-RC2",
+            "net.jodah" % "failsafe" % "0.9.2"
+        )
+    )
+  .enablePlugins(JmhPlugin)
+  .dependsOn(core)
